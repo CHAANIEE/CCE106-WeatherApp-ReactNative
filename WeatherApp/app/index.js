@@ -3,7 +3,7 @@ import { View, Text, ActivityIndicator, StyleSheet, ScrollView } from "react-nat
 import { LinearGradient } from "expo-linear-gradient";
 import SearchBar from "../components/SearchBar";
 import WeatherCard from "../components/WeatherCard";
-import { getWeatherByCity } from "../services/weatherApi";
+import { getWeatherByCity, APP_GRADIENT } from "../services/weatherApi";
 
 export default function HomeScreen() {
   const [weather, setWeather] = useState(null);
@@ -25,13 +25,10 @@ export default function HomeScreen() {
   };
 
   return (
-    <LinearGradient
-      colors={["#eaf2ff", "#f7faff"]}
-      style={styles.flex}
-    >
+    <LinearGradient colors={APP_GRADIENT} style={styles.flex}>
       <ScrollView contentContainerStyle={styles.container}>
         <SearchBar onSearch={handleSearch} />
-        {loading && <ActivityIndicator size="large" color="#3478f6" style={{ marginTop: 40 }} />}
+        {loading && <ActivityIndicator size="large" color="#FFFFFF" style={{ marginTop: 40 }} />}
         {error && <Text style={styles.error}>{error}</Text>}
         {!loading && !error && <WeatherCard data={weather} />}
       </ScrollView>
@@ -48,7 +45,7 @@ const styles = StyleSheet.create({
   },
   error: {
     textAlign: "center",
-    color: "#e74c3c",
+    color: "#FFB3B3",
     fontSize: 15,
     fontWeight: "600",
     marginTop: 30,
