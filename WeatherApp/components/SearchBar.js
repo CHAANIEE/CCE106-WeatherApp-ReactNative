@@ -14,18 +14,18 @@ export default function SearchBar({ onSearch }) {
   return (
     <View style={styles.wrapper}>
       <View style={styles.container}>
-        <MaterialCommunityIcons name="magnify" size={20} color="#8a94a6" />
+        <MaterialCommunityIcons name="magnify" size={20} color="#CBD9E0" />
         <TextInput
           style={styles.input}
           placeholder="Search location..."
-          placeholderTextColor="#a8b0bd"
+          placeholderTextColor="rgba(255,255,255,0.5)"
           value={query}
           onChangeText={setQuery}
           onSubmitEditing={handleSubmit}
           returnKeyType="search"
         />
         <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-          <MaterialCommunityIcons name="arrow-right" size={20} color="#fff" />
+          <MaterialCommunityIcons name="arrow-right" size={20} color="#1B2E45" />
         </TouchableOpacity>
       </View>
     </View>
@@ -37,30 +37,28 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 420,
     alignSelf: "center",
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingHorizontal: 24,
+    marginBottom: 24,
   },
   container: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
+    backgroundColor: "rgba(255,255,255,0.12)",
     borderRadius: 16,
     paddingHorizontal: 14,
     paddingVertical: 6,
     gap: 8,
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 10,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.2)",
   },
   input: {
     flex: 1,
     fontSize: 15,
     paddingVertical: 10,
-    color: "#1a1a1a",
+    color: "#FFFFFF",
   },
   button: {
-    backgroundColor: "#3478f6",
+    backgroundColor: "#FFFFFF",
     borderRadius: 12,
     width: 36,
     height: 36,
