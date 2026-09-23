@@ -8,14 +8,10 @@ function cleanCityName(city) {
     .trim();
 }
 
-// Builds a "Barangay, City, Province, Country" style string
-// from whatever admin levels Open-Meteo returns
 function buildLocationLabel(result) {
   const { name, admin1, admin2, admin3, admin4, country } = result;
-
   const rawParts = [name, admin4, admin3, admin2, admin1, country].filter(Boolean);
 
-  // Normalize for comparison: lowercase, strip "city of" / "municipality of" / "province of" prefixes
   const normalize = (str) =>
     str
       .toLowerCase()
@@ -66,7 +62,10 @@ async function fetchWeatherForResult(result) {
   const locationLabel = buildLocationLabel(result);
 
   const weatherRes = await fetch(
-    `${WEATHER_URL}?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code&timezone=auto`
+    `${WEATHER_URL}?latitude=${latitude}&longitude=${longitude}` +
+      `&current=temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,weather_code` +
+      `&daily=weather_code,temperature_2m_max,temperature_2m_min` +
+      `&timezone=auto`
   );
 
   if (!weatherRes.ok) {
@@ -75,13 +74,20 @@ async function fetchWeatherForResult(result) {
 
   const weatherData = await weatherRes.json();
 
+  const daily = weatherData.daily.time.map((date, i) => ({
+    date,
+    weatherCode: weatherData.daily.weather_code[i],
+    tempMax: weatherData.daily.temperature_2m_max[i],
+    tempMin: weatherData.daily.temperature_2m_min[i],
+  }));
+
   return {
     locationLabel,
     ...weatherData.current,
+    daily,
   };
 }
 
-// Maps Open-Meteo's weather_code to an icon name for MaterialCommunityIcons
 export function getWeatherIconName(code) {
   if (code === 0) return "weather-sunny";
   if (code === 1 || code === 2) return "weather-partly-cloudy";
@@ -117,3 +123,6 @@ export function getWeatherDescription(code) {
   };
   return map[code] || "Unknown";
 }
+
+// Zoom Earth teal-navy gradient, used for the whole screen
+export const APP_GRADIENT = ["#3E7C82", "#1B2E45", "#101B2B"];
