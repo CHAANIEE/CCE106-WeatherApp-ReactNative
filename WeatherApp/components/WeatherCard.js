@@ -1,7 +1,12 @@
-import { View, Text, StyleSheet } from "react-native";
-import { LinearGradient } from "expo-linear-gradient";
+import { View, Text, StyleSheet, ScrollView } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { getWeatherDescription, getWeatherIconName } from "../services/weatherApi";
+
+function formatDayLabel(dateStr, index) {
+  if (index === 0) return "Today";
+  const d = new Date(dateStr);
+  return d.toLocaleDateString("en-US", { weekday: "short" });
+}
 
 export default function WeatherCard({ data }) {
   if (!data) return null;
@@ -13,63 +18,72 @@ export default function WeatherCard({ data }) {
     relative_humidity_2m,
     wind_speed_10m,
     weather_code,
+    daily,
   } = data;
 
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     day: "numeric",
-    month: "short",
+    month: "long",
   });
 
   return (
     <View style={styles.wrapper}>
-      {/* Location header */}
-      <View style={styles.locationRow}>
-        <MaterialCommunityIcons name="map-marker" size={18} color="#3478f6" style={styles.locationIcon} />
-        <Text style={styles.locationText} numberOfLines={2}>{locationLabel}</Text>
-      </View>
+      {/* Header */}
       <Text style={styles.dateText}>{today}</Text>
+      <Text style={styles.locationText} numberOfLines={2}>{locationLabel}</Text>
 
-      {/* Gradient temp card */}
-      <LinearGradient
-        colors={["#4facfe", "#3478f6"]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.gradientCard}
-      >
-        <View style={styles.gradientTopRow}>
-          <View>
-            <Text style={styles.tempText}>{Math.round(temperature_2m)}°</Text>
-            <Text style={styles.conditionText}>{getWeatherDescription(weather_code)}</Text>
-          </View>
-          <MaterialCommunityIcons
-            name={getWeatherIconName(weather_code)}
-            size={72}
-            color="#fff"
-          />
+      {/* Hero icon + temp */}
+      <View style={styles.hero}>
+        <MaterialCommunityIcons
+          name={getWeatherIconName(weather_code)}
+          size={130}
+          color="#FFFFFF"
+        />
+        <Text style={styles.condition}>{getWeatherDescription(weather_code)}</Text>
+        <Text style={styles.temp}>{Math.round(temperature_2m)}°</Text>
+      </View>
+
+      {/* Detail rows */}
+      <View style={styles.detailsList}>
+        <View style={styles.detailRow}>
+          <Text style={styles.detailLabel}>Wind</Text>
+          <Text style={styles.detailValue}>{wind_speed_10m} km/h</Text>
         </View>
-      </LinearGradient>
-
-      {/* Stat pills */}
-      <View style={styles.pillRow}>
-        <View style={styles.pill}>
-          <MaterialCommunityIcons name="water-percent" size={22} color="#3478f6" />
-          <Text style={styles.pillValue}>{relative_humidity_2m}%</Text>
-          <Text style={styles.pillLabel}>Humidity</Text>
+        <View style={styles.divider} />
+        <View style={styles.detailRow}>
+          <Text style={styles.detailLabel}>Humidity</Text>
+          <Text style={styles.detailValue}>{relative_humidity_2m}%</Text>
         </View>
-
-        <View style={styles.pill}>
-          <MaterialCommunityIcons name="weather-windy" size={22} color="#3478f6" />
-          <Text style={styles.pillValue}>{wind_speed_10m} km/h</Text>
-          <Text style={styles.pillLabel}>Wind</Text>
-        </View>
-
-        <View style={styles.pill}>
-          <MaterialCommunityIcons name="thermometer" size={22} color="#3478f6" />
-          <Text style={styles.pillValue}>{Math.round(apparent_temperature)}°</Text>
-          <Text style={styles.pillLabel}>Feels like</Text>
+        <View style={styles.divider} />
+        <View style={styles.detailRow}>
+          <Text style={styles.detailLabel}>Feels like</Text>
+          <Text style={styles.detailValue}>{Math.round(apparent_temperature)}°</Text>
         </View>
       </View>
+
+      {/* 7-day forecast strip */}
+      {daily && daily.length > 0 && (
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={styles.forecastStrip}
+          contentContainerStyle={styles.forecastStripContent}
+        >
+          {daily.map((day, index) => (
+            <View key={day.date} style={styles.forecastItem}>
+              <Text style={styles.forecastDay}>{formatDayLabel(day.date, index)}</Text>
+              <MaterialCommunityIcons
+                name={getWeatherIconName(day.weatherCode)}
+                size={28}
+                color="#FFFFFF"
+              />
+              <Text style={styles.forecastTemp}>{Math.round(day.tempMax)}°</Text>
+              <Text style={styles.forecastTempMin}>{Math.round(day.tempMin)}°</Text>
+            </View>
+          ))}
+        </ScrollView>
+      )}
     </View>
   );
 }
@@ -79,80 +93,81 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 420,
     alignSelf: "center",
-    paddingHorizontal: 20,
-  },
-  locationRow: {
-    flexDirection: "row",
-    alignItems: "flex-start",
-    gap: 4,
-    marginTop: 8,
-  },
-  locationIcon: {
-    marginTop: 2,
-  },
-  locationText: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#1a1a1a",
-    flexShrink: 1,
-    flexWrap: "wrap",
+    paddingHorizontal: 24,
   },
   dateText: {
-    fontSize: 12,
-    color: "#8a94a6",
-    marginBottom: 16,
-    marginLeft: 22,
+    fontSize: 14,
+    color: "#CBD9E0",
+    textAlign: "center",
+    marginTop: 8,
   },
-  gradientCard: {
-    borderRadius: 24,
-    padding: 24,
-    shadowColor: "#3478f6",
-    shadowOpacity: 0.35,
-    shadowRadius: 20,
-    shadowOffset: { width: 0, height: 10 },
-    elevation: 8,
-  },
-  gradientTopRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  tempText: {
-    fontSize: 56,
+  locationText: {
+    fontSize: 20,
     fontWeight: "700",
-    color: "#fff",
+    color: "#FFFFFF",
+    textAlign: "center",
+    marginTop: 2,
+    marginBottom: 20,
   },
-  conditionText: {
+  hero: {
+    alignItems: "center",
+    marginBottom: 24,
+  },
+  condition: {
     fontSize: 16,
-    color: "#eaf2ff",
-    marginTop: 2,
+    color: "#CBD9E0",
+    marginTop: 8,
   },
-  pillRow: {
+  temp: {
+    fontSize: 64,
+    fontWeight: "200",
+    color: "#FFFFFF",
+    marginTop: 4,
+  },
+  detailsList: {
+    marginBottom: 24,
+  },
+  detailRow: {
     flexDirection: "row",
     justifyContent: "space-between",
-    marginTop: 16,
-    gap: 10,
+    paddingVertical: 12,
   },
-  pill: {
-    flex: 1,
-    backgroundColor: "#fff",
-    borderRadius: 16,
-    paddingVertical: 14,
+  detailLabel: {
+    fontSize: 14,
+    color: "#AFC2CC",
+  },
+  detailValue: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#FFFFFF",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "rgba(255,255,255,0.12)",
+  },
+  forecastStrip: {
+    marginBottom: 20,
+  },
+  forecastStripContent: {
+    gap: 18,
+    paddingRight: 12,
+  },
+  forecastItem: {
     alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    elevation: 2,
+    gap: 6,
   },
-  pillValue: {
-    fontSize: 15,
+  forecastDay: {
+    fontSize: 12,
+    color: "#CBD9E0",
+    fontWeight: "600",
+  },
+  forecastTemp: {
+    fontSize: 13,
     fontWeight: "700",
-    color: "#1a1a1a",
-    marginTop: 6,
+    color: "#FFFFFF",
   },
-  pillLabel: {
+  forecastTempMin: {
     fontSize: 11,
-    color: "#8a94a6",
-    marginTop: 2,
+    color: "#8CA0AC",
   },
 });
