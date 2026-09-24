@@ -1,14 +1,60 @@
-import { useState } from "react";
-import { View, TextInput, TouchableOpacity, StyleSheet } from "react-native";
+import { useState, useEffect, useRef } from "react";
+import {
+  View,
+  TextInput,
+  TouchableOpacity,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+} from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { searchLocations } from "../services/weatherApi";
 
-export default function SearchBar({ onSearch }) {
+export default function SearchBar({ onSearch, onSelectSuggestion }) {
   const [query, setQuery] = useState("");
+  const [suggestions, setSuggestions] = useState([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const debounceRef = useRef(null);
+
+  useEffect(() => {
+    if (debounceRef.current) clearTimeout(debounceRef.current);
+
+    if (query.trim().length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    debounceRef.current = setTimeout(async () => {
+      setLoadingSuggestions(true);
+      try {
+        const results = await searchLocations(query);
+        setSuggestions(results);
+        setShowSuggestions(results.length > 0);
+      } catch {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      } finally {
+        setLoadingSuggestions(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(debounceRef.current);
+  }, [query]);
 
   const handleSubmit = () => {
     if (query.trim()) {
+      setShowSuggestions(false);
       onSearch(query.trim());
     }
+  };
+
+  const handleSelect = (item) => {
+    setQuery(item.label);
+    setShowSuggestions(false);
+    setSuggestions([]);
+    onSelectSuggestion(item);
   };
 
   return (
@@ -24,10 +70,31 @@ export default function SearchBar({ onSearch }) {
           onSubmitEditing={handleSubmit}
           returnKeyType="search"
         />
+        {loadingSuggestions && <ActivityIndicator size="small" color="#CBD9E0" />}
         <TouchableOpacity style={styles.button} onPress={handleSubmit}>
           <MaterialCommunityIcons name="arrow-right" size={20} color="#1B2E45" />
         </TouchableOpacity>
       </View>
+
+      {showSuggestions && (
+        <View style={styles.dropdown}>
+          {suggestions.map((item, index) => (
+            <TouchableOpacity
+              key={item.id ?? index}
+              style={[
+                styles.suggestionRow,
+                index === suggestions.length - 1 && { borderBottomWidth: 0 },
+              ]}
+              onPress={() => handleSelect(item)}
+            >
+              <MaterialCommunityIcons name="map-marker-outline" size={16} color="#CBD9E0" />
+              <Text style={styles.suggestionText} numberOfLines={1}>
+                {item.label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
     </View>
   );
 }
@@ -39,6 +106,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingHorizontal: 24,
     marginBottom: 24,
+    zIndex: 10,
   },
   container: {
     flexDirection: "row",
@@ -64,5 +132,27 @@ const styles = StyleSheet.create({
     height: 36,
     alignItems: "center",
     justifyContent: "center",
+  },
+  dropdown: {
+    marginTop: 8,
+    backgroundColor: "#16232F",
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.12)",
+    overflow: "hidden",
+  },
+  suggestionRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(255,255,255,0.08)",
+  },
+  suggestionText: {
+    color: "#E8EEF4",
+    fontSize: 13.5,
+    flexShrink: 1,
   },
 });
