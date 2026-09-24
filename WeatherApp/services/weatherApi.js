@@ -32,6 +32,7 @@ function buildLocationLabel(result) {
   return parts.join(", ");
 }
 
+// Autocomplete suggestions as the user types
 export async function searchLocations(query) {
   const cleaned = cleanCityName(query);
   const searchTerm = cleaned || query;
@@ -54,6 +55,7 @@ export async function searchLocations(query) {
   }));
 }
 
+// Fallback single-best-match search (used when user hits search without picking a suggestion)
 export async function getWeatherByCity(city) {
   const cleaned = cleanCityName(city);
   const searchTerm = cleaned || city;
@@ -81,6 +83,7 @@ export async function getWeatherByCity(city) {
   return fetchWeatherForResult(geoData.results[0]);
 }
 
+// Fetch weather directly from coordinates (used by suggestion picks + "Use My Location")
 export async function getWeatherByCoords(latitude, longitude, locationLabel) {
   const weatherRes = await fetch(
     `${WEATHER_URL}?latitude=${latitude}&longitude=${longitude}` +
@@ -104,6 +107,8 @@ export async function getWeatherByCoords(latitude, longitude, locationLabel) {
 
   return {
     locationLabel,
+    latitude,
+    longitude,
     ...weatherData.current,
     daily,
   };
@@ -112,6 +117,34 @@ export async function getWeatherByCoords(latitude, longitude, locationLabel) {
 async function fetchWeatherForResult(result) {
   const locationLabel = buildLocationLabel(result);
   return getWeatherByCoords(result.latitude, result.longitude, locationLabel);
+}
+
+// Reverse geocoding - converts coordinates back into a place name (works on web + native)
+export async function reverseGeocode(latitude, longitude) {
+  try {
+    const res = await fetch(
+      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=en`
+    );
+    const data = await res.json();
+
+    const parts = [
+      data.city || data.locality,
+      data.principalSubdivision,
+      data.countryName,
+    ].filter(Boolean);
+
+    const seen = new Set();
+    const deduped = parts.filter((part) => {
+      const key = part.toLowerCase().trim();
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    return deduped.length > 0 ? deduped.join(", ") : "My Location";
+  } catch {
+    return "My Location";
+  }
 }
 
 // isDay: 1 = daytime, 0 = nighttime (from Open-Meteo's current.is_day field)
@@ -154,9 +187,10 @@ export function getWeatherDescription(code) {
   return map[code] || "Unknown";
 }
 
+// Default gradient shown before any search
 export const APP_GRADIENT = ["#3E7C82", "#1B2E45", "#101B2B"];
 
-// Exact per-code color palette (daytime base colors, as specified)
+// Exact per-code color palette
 const WEATHER_COLOR_MAP = {
   0: "#FFD21F",  // Clear sky - Yellow
   1: "#B8D83D",  // Mainly clear - Yellow-Green
