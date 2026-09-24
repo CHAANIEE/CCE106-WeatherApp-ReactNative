@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { forwardRef, useState, useEffect, useRef, useImperativeHandle } from "react";
 import {
   View,
   TextInput,
@@ -10,12 +10,22 @@ import {
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { searchLocations } from "../services/weatherApi";
 
-export default function SearchBar({ onSearch, onSelectSuggestion }) {
+const SearchBar = forwardRef(function SearchBar({ onSearch, onSelectSuggestion }, ref) {
   const [query, setQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
   const debounceRef = useRef(null);
+  const blurTimeoutRef = useRef(null);
+
+  useImperativeHandle(ref, () => ({
+    closeSuggestions: () => setShowSuggestions(false),
+    reset: () => {
+      setQuery("");
+      setSuggestions([]);
+      setShowSuggestions(false);
+    },
+  }));
 
   useEffect(() => {
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -51,10 +61,23 @@ export default function SearchBar({ onSearch, onSelectSuggestion }) {
   };
 
   const handleSelect = (item) => {
+    if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
     setQuery(item.label);
     setShowSuggestions(false);
     setSuggestions([]);
     onSelectSuggestion(item);
+  };
+
+  // Delay hiding on blur so a tap on a suggestion row has time to register first
+  const handleBlur = () => {
+    blurTimeoutRef.current = setTimeout(() => {
+      setShowSuggestions(false);
+    }, 150);
+  };
+
+  const handleFocus = () => {
+    if (blurTimeoutRef.current) clearTimeout(blurTimeoutRef.current);
+    if (suggestions.length > 0) setShowSuggestions(true);
   };
 
   return (
@@ -68,6 +91,8 @@ export default function SearchBar({ onSearch, onSelectSuggestion }) {
           value={query}
           onChangeText={setQuery}
           onSubmitEditing={handleSubmit}
+          onBlur={handleBlur}
+          onFocus={handleFocus}
           returnKeyType="search"
         />
         {loadingSuggestions && <ActivityIndicator size="small" color="#CBD9E0" />}
@@ -97,7 +122,9 @@ export default function SearchBar({ onSearch, onSelectSuggestion }) {
       )}
     </View>
   );
-}
+});
+
+export default SearchBar;
 
 const styles = StyleSheet.create({
   wrapper: {
@@ -106,7 +133,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     paddingHorizontal: 24,
     marginBottom: 24,
-    zIndex: 10,
+    zIndex: 20,
   },
   container: {
     flexDirection: "row",
