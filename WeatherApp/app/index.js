@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react"; // 👈 added useEffect
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
 import { LinearGradient } from "expo-linear-gradient";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import * as Location from "expo-location";
+import NetInfo from "@react-native-community/netinfo"; // 👈 added
 import SearchBar from "../components/SearchBar";
 import WeatherCard from "../components/WeatherCard";
 import {
@@ -24,9 +25,23 @@ export default function HomeScreen() {
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [isConnected, setIsConnected] = useState(true); // 👈 added
   const searchBarRef = useRef(null);
 
+  // 👇 added: listen for connectivity changes
+  useEffect(() => {
+    const unsubscribe = NetInfo.addEventListener((state) => {
+      setIsConnected(state.isConnected);
+    });
+
+    return () => unsubscribe();
+  }, []);
+
   const handleSearch = async (city) => {
+    if (!isConnected) {
+      setError("No internet connection. Please check your network and try again.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -41,6 +56,10 @@ export default function HomeScreen() {
   };
 
   const handleSelectSuggestion = async (item) => {
+    if (!isConnected) {
+      setError("No internet connection. Please check your network and try again.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -55,6 +74,10 @@ export default function HomeScreen() {
   };
 
   const handleUseMyLocation = async () => {
+    if (!isConnected) {
+      setError("No internet connection. Please check your network and try again.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -97,6 +120,14 @@ export default function HomeScreen() {
           <MaterialCommunityIcons name="weather-partly-cloudy" size={20} color="#FFFFFF" />
           <Text style={styles.appBarText}>WeatherApp</Text>
         </TouchableOpacity>
+
+        {/* 👇 added: offline banner */}
+        {!isConnected && (
+          <View style={styles.offlineBanner}>
+            <MaterialCommunityIcons name="wifi-off" size={16} color="#FFFFFF" />
+            <Text style={styles.offlineBannerText}>You're offline</Text>
+          </View>
+        )}
 
         <SearchBar
           ref={searchBarRef}
@@ -151,7 +182,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   container: {
     flexGrow: 1,
-    paddingTop: 16,
+    paddingTop: 60,
     paddingBottom: 40,
   },
   appBar: {
@@ -166,6 +197,24 @@ const styles = StyleSheet.create({
     fontWeight: "700",
     color: "#FFFFFF",
     letterSpacing: 0.5,
+  },
+  // 👇 added
+  offlineBanner: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    backgroundColor: "rgba(255,80,80,0.25)",
+    borderRadius: 20,
+    paddingVertical: 6,
+    paddingHorizontal: 14,
+    alignSelf: "center",
+    marginBottom: 16,
+  },
+  offlineBannerText: {
+    color: "#FFFFFF",
+    fontSize: 13,
+    fontWeight: "600",
   },
   error: {
     textAlign: "center",
