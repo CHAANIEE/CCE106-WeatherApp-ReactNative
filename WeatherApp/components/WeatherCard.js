@@ -18,6 +18,7 @@ export default function WeatherCard({ data }) {
     relative_humidity_2m,
     wind_speed_10m,
     weather_code,
+    is_day,
     daily,
   } = data;
 
@@ -36,7 +37,7 @@ export default function WeatherCard({ data }) {
       {/* Hero icon + temp */}
       <View style={styles.hero}>
         <MaterialCommunityIcons
-          name={getWeatherIconName(weather_code)}
+          name={getWeatherIconName(weather_code, is_day)}
           size={130}
           color="#FFFFFF"
         />
@@ -74,7 +75,7 @@ export default function WeatherCard({ data }) {
             <View key={day.date} style={styles.forecastItem}>
               <Text style={styles.forecastDay}>{formatDayLabel(day.date, index)}</Text>
               <MaterialCommunityIcons
-                name={getWeatherIconName(day.weatherCode)}
+                name={getWeatherIconName(day.weatherCode, 1)}
                 size={28}
                 color="#FFFFFF"
               />
